@@ -11,7 +11,7 @@ from urllib.parse import urljoin
 
 # Configuration
 CONFIG = {
-    "password_hash": "5f4dcc3b5aa765d61d8327deb882cf99",  # "passwordk" এর hash
+    "password_hash": "5f4dcc3b5aa765d61d8327deb882cf99",  # "password" এর hash
     "current_version": "2.2",
     "github_raw_url": "https://raw.githubusercontent.com/DragonMasterKhalid/sms_bomber/main/version.txt",
     "github_repo_url": "https://github.com/DragonMasterKhalid/sms_bomber",
