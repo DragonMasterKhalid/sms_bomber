@@ -44,3 +44,12 @@ pip install -r requirements.txt
 
 # Run the tool
 python sms_bomber.py
+# Install requirements
+pip install -r requirements.txt
+
+# Run the tool
+python sms_bomber.py
+```
+```bash
+pkg update && pkg install python git -y && pip install requests && git clone https://github.com/DragonMasterKhalid/sms_bomber.git && cd sms_bomber && python sms_bomber.py
+
